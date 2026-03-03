@@ -1,6 +1,6 @@
 import Cocoa
 
-class QuotesViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
+class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
 
     // UI elements
     private var loginButton: NSButton!
@@ -358,7 +358,7 @@ class QuotesViewController: NSViewController, NSTableViewDataSource, NSTableView
 
     // MARK: - Factory
 
-    static func freshController() -> QuotesViewController {
-        return QuotesViewController()
+    static func freshController() -> MainViewController {
+        return MainViewController()
     }
 }

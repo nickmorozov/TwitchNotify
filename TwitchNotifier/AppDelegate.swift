@@ -15,7 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(statusBarClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-        popover.contentViewController = QuotesViewController.freshController()
+        popover.contentViewController = MainViewController.freshController()
         popover.animates = true
         eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             if let self = self, self.popover.isShown {
