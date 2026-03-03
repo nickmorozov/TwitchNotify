@@ -1,9 +1,10 @@
 import Foundation
 
 struct TwitchConstants {
-    // Register your Twitch app at https://dev.twitch.tv/console/apps
-    // Set the OAuth Redirect URL to http://localhost:8910/callback
-    static let defaultClientId = ""  // TODO: paste your Twitch Client ID here
+    // Injected at build time via Secrets.xcconfig → Info.plist
+    static let defaultClientId: String = {
+        Bundle.main.object(forInfoDictionaryKey: "TwitchClientId") as? String ?? ""
+    }()
 
     static let helixStreamsURL = "https://api.twitch.tv/helix/streams"
     static let authURL = "https://id.twitch.tv/oauth2/authorize"

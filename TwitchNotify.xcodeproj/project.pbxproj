@@ -39,6 +39,7 @@
 		AA0000010000000100000003 /* TwitchAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchAPIClient.swift; sourceTree = "<group>"; };
 		AA0000010000000100000005 /* TwitchAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchAuthManager.swift; sourceTree = "<group>"; };
 		AA0000010000000100000007 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
+		AA0000010000000100000009 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +56,7 @@
 		112C8564211EF65600517242 = {
 			isa = PBXGroup;
 			children = (
+				AA0000010000000100000009 /* Secrets.xcconfig */,
 				112C856F211EF65600517242 /* Quotes */,
 				112C856E211EF65600517242 /* Products */,
 			);
@@ -303,6 +305,7 @@
 		};
 		112C857E211EF65700517242 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA0000010000000100000009 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
@@ -321,6 +324,7 @@
 		};
 		112C857F211EF65700517242 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA0000010000000100000009 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;

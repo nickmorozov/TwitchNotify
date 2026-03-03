@@ -18,6 +18,9 @@ DerivedData/
 # CocoaPods
 Pods/
 
+# Secrets
+Secrets.xcconfig
+
 # Misc
 *.profraw
 *.swp
