@@ -11,5 +11,5 @@ struct TwitchConstants {
     static let helixUsersURL = "https://api.twitch.tv/helix/users"
     static let helixFollowedURL = "https://api.twitch.tv/helix/channels/followed"
     static let helixSubscriptionURL = "https://api.twitch.tv/helix/subscriptions/user"
-    static let callbackPort: UInt16 = 8910
+    static let redirectURI = "https://enum-solutions-inc.github.io/twitch-notifier/callback"
 }

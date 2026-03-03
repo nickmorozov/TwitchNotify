@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Notifier — Connecting...</title>
+    <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex;
+           justify-content: center; align-items: center; height: 100vh;
+           margin: 0; background: #0e0e10; color: #efeff1; }
+    .container { text-align: center; max-width: 400px; }
+    h2 { color: #9147ff; }
+    p { color: #adadb8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 id="title">Connecting...</h2>
+    <p id="subtitle">Redirecting to Twitch Notifier...</p>
+</div>
+<script>
+(function() {
+    var hash = window.location.hash.substring(1);
+    if (!hash) {
+        document.getElementById('title').textContent = 'Authentication failed';
+        document.getElementById('subtitle').textContent = 'No token received. Please try again from the app.';
+        return;
+    }
+    // Redirect the full fragment to the app's custom URL scheme
+    window.location = 'twitchnotifier://callback#' + hash;
+
+    // If the redirect didn't work (app not installed), show a message after a delay
+    setTimeout(function() {
+        document.getElementById('title').textContent = 'Open Twitch Notifier';
+        document.getElementById('subtitle').textContent =
+            'If the app did not open automatically, make sure Twitch Notifier is installed and running.';
+    }, 3000);
+})();
+</script>
+</body>
+</html>

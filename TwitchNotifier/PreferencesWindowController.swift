@@ -54,7 +54,7 @@ final class PreferencesWindowController: NSWindowController {
         savedLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(savedLabel)
 
-        let helpLabel = NSTextField(labelWithString: "Register at dev.twitch.tv/console/apps\nRedirect URL: http://localhost:\(TwitchConstants.callbackPort)/callback")
+        let helpLabel = NSTextField(labelWithString: "Register at dev.twitch.tv/console/apps\nRedirect URL: \(TwitchConstants.redirectURI)")
         helpLabel.font = .systemFont(ofSize: 10)
         helpLabel.textColor = .tertiaryLabelColor
         helpLabel.maximumNumberOfLines = 2

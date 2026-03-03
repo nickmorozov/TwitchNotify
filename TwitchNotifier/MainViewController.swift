@@ -1,4 +1,5 @@
 import Cocoa
+import UserNotifications
 
 class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
 
@@ -29,6 +30,7 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         streamers = defaults.stringArray(forKey: streamersKey) ?? []
         setupUI()
         updateConnectionStatus()
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
         if !streamers.isEmpty && TwitchAuthManager.shared.isAuthenticated {
             refreshAllStatuses()
         }
@@ -298,11 +300,13 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
     }
 
     private func deliverNotification(streamer: String, title: String) {
-        let notification = NSUserNotification()
-        notification.title = "\(streamer) is live!"
-        notification.informativeText = title
-        notification.soundName = NSUserNotificationDefaultSoundName
-        NSUserNotificationCenter.default.deliver(notification)
+        let content = UNMutableNotificationContent()
+        content.title = "\(streamer) is live!"
+        content.body = title
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "live-\(streamer)",
+                                            content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 
     // MARK: - NSTableViewDataSource

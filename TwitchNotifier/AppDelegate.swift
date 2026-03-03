@@ -1,6 +1,6 @@
 import Cocoa
 
-@NSApplicationMain
+@main
 class AppDelegate: NSObject, NSApplicationDelegate {
     let popover = NSPopover()
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -70,5 +70,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showPreferences(_ sender: Any?) {
         PreferencesWindowController.shared.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "twitchnotifier" {
+            TwitchAuthManager.shared.handleCallback(url: url)
+        }
     }
 }
