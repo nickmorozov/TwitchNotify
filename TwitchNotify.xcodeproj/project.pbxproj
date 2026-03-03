@@ -16,10 +16,14 @@
 		112C8589211F3CAE00517242 /* EventMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112C8588211F3CAE00517242 /* EventMonitor.swift */; };
 		112C858B211F60AF00517242 /* imgonline-com-ua-Resize-lIGxSPFDWLGN5Zlz.png in Resources */ = {isa = PBXBuildFile; fileRef = 112C858A211F60AF00517242 /* imgonline-com-ua-Resize-lIGxSPFDWLGN5Zlz.png */; };
 		112C858D211F630200517242 /* twitch-900x298.png in Resources */ = {isa = PBXBuildFile; fileRef = 112C858C211F630200517242 /* twitch-900x298.png */; };
+		AA0000010000000100000002 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000100000001 /* KeychainHelper.swift */; };
+		AA0000010000000100000004 /* TwitchAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000100000003 /* TwitchAPIClient.swift */; };
+		AA0000010000000100000006 /* TwitchAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000100000005 /* TwitchAuthManager.swift */; };
+		AA0000010000000100000008 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000100000007 /* PreferencesWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		112C856D211EF65600517242 /* Quotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		112C856D211EF65600517242 /* TwitchNotify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TwitchNotify.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		112C8570211EF65600517242 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		112C8572211EF65600517242 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		112C8574211EF65700517242 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -31,6 +35,10 @@
 		112C8588211F3CAE00517242 /* EventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventMonitor.swift; sourceTree = "<group>"; };
 		112C858A211F60AF00517242 /* imgonline-com-ua-Resize-lIGxSPFDWLGN5Zlz.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "imgonline-com-ua-Resize-lIGxSPFDWLGN5Zlz.png"; sourceTree = "<group>"; };
 		112C858C211F630200517242 /* twitch-900x298.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "twitch-900x298.png"; sourceTree = "<group>"; };
+		AA0000010000000100000001 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		AA0000010000000100000003 /* TwitchAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchAPIClient.swift; sourceTree = "<group>"; };
+		AA0000010000000100000005 /* TwitchAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchAuthManager.swift; sourceTree = "<group>"; };
+		AA0000010000000100000007 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,7 +63,7 @@
 		112C856E211EF65600517242 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				112C856D211EF65600517242 /* Quotes.app */,
+				112C856D211EF65600517242 /* TwitchNotify.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,6 +75,10 @@
 				112C8582211EFEC000517242 /* Quote.swift */,
 				112C8580211EFD4500517242 /* QuotesViewController.swift */,
 				112C8588211F3CAE00517242 /* EventMonitor.swift */,
+				AA0000010000000100000001 /* KeychainHelper.swift */,
+				AA0000010000000100000003 /* TwitchAPIClient.swift */,
+				AA0000010000000100000005 /* TwitchAuthManager.swift */,
+				AA0000010000000100000007 /* PreferencesWindowController.swift */,
 				112C8572211EF65600517242 /* ViewController.swift */,
 				112C8574211EF65700517242 /* Assets.xcassets */,
 				112C8576211EF65700517242 /* Main.storyboard */,
@@ -81,9 +93,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		112C856C211EF65600517242 /* Quotes */ = {
+		112C856C211EF65600517242 /* TwitchNotify */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 112C857D211EF65700517242 /* Build configuration list for PBXNativeTarget "Quotes" */;
+			buildConfigurationList = 112C857D211EF65700517242 /* Build configuration list for PBXNativeTarget "TwitchNotify" */;
 			buildPhases = (
 				112C8569211EF65600517242 /* Sources */,
 				112C856A211EF65600517242 /* Frameworks */,
@@ -93,9 +105,9 @@
 			);
 			dependencies = (
 			);
-			name = Quotes;
-			productName = Quotes;
-			productReference = 112C856D211EF65600517242 /* Quotes.app */;
+			name = TwitchNotify;
+			productName = TwitchNotify;
+			productReference = 112C856D211EF65600517242 /* TwitchNotify.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -113,7 +125,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 112C8568211EF65600517242 /* Build configuration list for PBXProject "Quotes" */;
+			buildConfigurationList = 112C8568211EF65600517242 /* Build configuration list for PBXProject "TwitchNotify" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -126,7 +138,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				112C856C211EF65600517242 /* Quotes */,
+				112C856C211EF65600517242 /* TwitchNotify */,
 			);
 		};
 /* End PBXProject section */
@@ -155,6 +167,10 @@
 				112C8573211EF65600517242 /* ViewController.swift in Sources */,
 				112C8581211EFD4500517242 /* QuotesViewController.swift in Sources */,
 				112C8571211EF65600517242 /* AppDelegate.swift in Sources */,
+				AA0000010000000100000002 /* KeychainHelper.swift in Sources */,
+				AA0000010000000100000004 /* TwitchAPIClient.swift in Sources */,
+				AA0000010000000100000006 /* TwitchAuthManager.swift in Sources */,
+				AA0000010000000100000008 /* PreferencesWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,7 +220,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -264,7 +280,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -289,17 +305,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = Z6TZXH8MS8;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = Quotes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = nwapp.Quotes;
+				PRODUCT_BUNDLE_IDENTIFIER = nwapp.TwitchNotifier;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -307,24 +323,24 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = Z6TZXH8MS8;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = Quotes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = nwapp.Quotes;
+				PRODUCT_BUNDLE_IDENTIFIER = nwapp.TwitchNotifier;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		112C8568211EF65600517242 /* Build configuration list for PBXProject "Quotes" */ = {
+		112C8568211EF65600517242 /* Build configuration list for PBXProject "TwitchNotify" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				112C857B211EF65700517242 /* Debug */,
@@ -333,7 +349,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		112C857D211EF65700517242 /* Build configuration list for PBXNativeTarget "Quotes" */ = {
+		112C857D211EF65700517242 /* Build configuration list for PBXNativeTarget "TwitchNotify" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				112C857E211EF65700517242 /* Debug */,

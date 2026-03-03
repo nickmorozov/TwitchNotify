@@ -1,0 +1,25 @@
+# Xcode
+build/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# CocoaPods
+Pods/
+
+# Misc
+*.profraw
+*.swp
+*~
+.claude/
