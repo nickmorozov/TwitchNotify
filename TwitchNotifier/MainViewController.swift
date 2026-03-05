@@ -4,21 +4,18 @@ import UserNotifications
 class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
 
     // UI elements
-    private var loginButton: NSButton!
-    private var statusLabel: NSTextField!
-    private var syncButton: NSButton!
-    private var channelCountLabel: NSTextField!
     private var tableView: NSTableView!
-    private var autoUpdateCheckbox: NSButton!
-    private var quitButton: NSButton!
+    private var gearButton: NSButton!
 
     // State
     private var streamers: [String] = []
     private var streamerStatus: [String: StreamStatus] = [:]
     private var subscribedChannels: Set<String> = []
+    private var lastSeen: [String: Date] = [:]
     private var pollTimer: Timer?
     private let defaults = UserDefaults.standard
     private let streamersKey = "monitoredStreamers"
+    private let lastSeenKey = "lastSeenLive"
 
     override func loadView() {
         self.view = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 360))
@@ -28,57 +25,35 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         super.viewDidLoad()
         preferredContentSize = NSSize(width: 320, height: 360)
         streamers = defaults.stringArray(forKey: streamersKey) ?? []
+        if let saved = defaults.dictionary(forKey: lastSeenKey) as? [String: Date] {
+            lastSeen = saved
+        }
         setupUI()
-        updateConnectionStatus()
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
         if !streamers.isEmpty && TwitchAuthManager.shared.isAuthenticated {
             refreshAllStatuses()
+        }
+        if defaults.bool(forKey: "autoUpdate") {
+            startPolling()
+        }
+
+        NotificationCenter.default.addObserver(self, selector: #selector(preferencesChanged),
+                                               name: .preferencesDidChange, object: nil)
+
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self,
+                  event.keyCode == 36,
+                  self.view.window?.firstResponder === self.tableView else {
+                return event
+            }
+            self.openSelectedChannel()
+            return nil
         }
     }
 
     // MARK: - UI Setup
 
     private func setupUI() {
-        // --- Auth Section ---
-        loginButton = NSButton(title: "Login with Twitch", target: self,
-                               action: #selector(loginToTwitch(_:)))
-        loginButton.bezelStyle = .rounded
-        loginButton.font = .systemFont(ofSize: 11)
-        loginButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(loginButton)
-
-        statusLabel = NSTextField(labelWithString: "")
-        statusLabel.font = .systemFont(ofSize: 10)
-        statusLabel.textColor = .secondaryLabelColor
-        statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(statusLabel)
-
-        // --- Separator 1 ---
-        let sep1 = NSBox()
-        sep1.boxType = .separator
-        sep1.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(sep1)
-
-        // --- Sync Section ---
-        syncButton = NSButton(title: "Sync Follows", target: self,
-                              action: #selector(syncFollows(_:)))
-        syncButton.bezelStyle = .rounded
-        syncButton.font = .systemFont(ofSize: 11)
-        syncButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(syncButton)
-
-        channelCountLabel = NSTextField(labelWithString: channelCountText())
-        channelCountLabel.font = .systemFont(ofSize: 10)
-        channelCountLabel.textColor = .secondaryLabelColor
-        channelCountLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(channelCountLabel)
-
-        // --- Separator 2 ---
-        let sep2 = NSBox()
-        sep2.boxType = .separator
-        sep2.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(sep2)
-
         // --- Table View ---
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("StreamerColumn"))
         column.title = "Streamer"
@@ -86,11 +61,18 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         tableView = NSTableView()
         tableView.addTableColumn(column)
         tableView.headerView = nil
+        tableView.target = self
+        tableView.doubleAction = #selector(openChannel(_:))
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = 24
         tableView.backgroundColor = .clear
         tableView.usesAlternatingRowBackgroundColors = false
+
+        let tableMenu = NSMenu()
+        tableMenu.addItem(NSMenuItem(title: "Remove", action: #selector(removeSelectedChannel(_:)),
+                                     keyEquivalent: ""))
+        tableView.menu = tableMenu
 
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
@@ -99,141 +81,70 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
 
-        // --- Separator 3 ---
-        let sep3 = NSBox()
-        sep3.boxType = .separator
-        sep3.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(sep3)
-
-        // --- Bottom Bar ---
-        autoUpdateCheckbox = NSButton(checkboxWithTitle: "Auto-update", target: self,
-                                      action: #selector(autoUpdateToggled(_:)))
-        autoUpdateCheckbox.font = .systemFont(ofSize: 11)
-        autoUpdateCheckbox.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(autoUpdateCheckbox)
-
-        quitButton = NSButton(title: "Quit", target: self,
-                              action: #selector(quitApp(_:)))
-        quitButton.bezelStyle = .rounded
-        quitButton.font = .systemFont(ofSize: 11)
-        quitButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(quitButton)
+        // --- Gear Button ---
+        gearButton = NSButton(image: NSImage(named: NSImage.actionTemplateName)!,
+                              target: self, action: #selector(openPreferences(_:)))
+        gearButton.bezelStyle = .rounded
+        gearButton.isBordered = false
+        gearButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(gearButton)
 
         // --- Constraints ---
         NSLayoutConstraint.activate([
-            loginButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
-            loginButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-
-            statusLabel.centerYAnchor.constraint(equalTo: loginButton.centerYAnchor),
-            statusLabel.leadingAnchor.constraint(equalTo: loginButton.trailingAnchor, constant: 8),
-
-            sep1.topAnchor.constraint(equalTo: loginButton.bottomAnchor, constant: 8),
-            sep1.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            sep1.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-
-            syncButton.topAnchor.constraint(equalTo: sep1.bottomAnchor, constant: 8),
-            syncButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-
-            channelCountLabel.centerYAnchor.constraint(equalTo: syncButton.centerYAnchor),
-            channelCountLabel.leadingAnchor.constraint(equalTo: syncButton.trailingAnchor, constant: 8),
-
-            sep2.topAnchor.constraint(equalTo: syncButton.bottomAnchor, constant: 8),
-            sep2.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            sep2.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-
-            scrollView.topAnchor.constraint(equalTo: sep2.bottomAnchor, constant: 4),
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: gearButton.topAnchor, constant: -4),
 
-            sep3.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 4),
-            sep3.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            sep3.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-
-            autoUpdateCheckbox.topAnchor.constraint(equalTo: sep3.bottomAnchor, constant: 8),
-            autoUpdateCheckbox.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            autoUpdateCheckbox.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -10),
-
-            quitButton.centerYAnchor.constraint(equalTo: autoUpdateCheckbox.centerYAnchor),
-            quitButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            gearButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            gearButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -6),
+            gearButton.widthAnchor.constraint(equalToConstant: 24),
+            gearButton.heightAnchor.constraint(equalToConstant: 24),
         ])
-    }
-
-    private func channelCountText() -> String {
-        let subCount = subscribedChannels.count
-        if streamers.isEmpty { return "No channels" }
-        if subCount > 0 {
-            return "\(streamers.count) followed, \(subCount) subscribed"
-        }
-        return "\(streamers.count) channels"
     }
 
     // MARK: - Actions
 
-    @objc private func loginToTwitch(_ sender: NSButton) {
-        guard TwitchAuthManager.shared.clientId != nil else {
-            statusLabel.stringValue = "No Client ID configured"
-            statusLabel.textColor = .systemRed
-            return
-        }
-        statusLabel.stringValue = "Waiting for auth..."
-        statusLabel.textColor = .systemOrange
-        TwitchAuthManager.shared.onAuthComplete = { [weak self] success in
-            if success {
-                self?.updateConnectionStatus()
-            } else {
-                self?.statusLabel.stringValue = "Auth timed out"
-                self?.statusLabel.textColor = .systemRed
-            }
-        }
-        TwitchAuthManager.shared.startAuth()
+    @objc private func openPreferences(_ sender: Any) {
+        PreferencesWindowController.shared.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
-    @objc private func syncFollows(_ sender: NSButton) {
-        guard TwitchAuthManager.shared.isAuthenticated else {
-            channelCountLabel.stringValue = "Login first"
-            channelCountLabel.textColor = .systemRed
-            return
-        }
-        channelCountLabel.stringValue = "Syncing..."
-        channelCountLabel.textColor = .secondaryLabelColor
-        syncButton.isEnabled = false
+    @objc private func openChannel(_ sender: Any) {
+        let row = tableView.clickedRow >= 0 ? tableView.clickedRow : tableView.selectedRow
+        openChannelAtRow(row)
+    }
 
-        TwitchAPIClient.shared.fetchFollowedChannels { [weak self] channels in
-            guard let self = self else { return }
-            self.streamers = channels.sorted()
-            self.defaults.set(self.streamers, forKey: self.streamersKey)
-            self.channelCountLabel.stringValue = self.channelCountText()
-            self.channelCountLabel.textColor = .secondaryLabelColor
-            self.syncButton.isEnabled = true
-            self.tableView.reloadData()
-            self.refreshAllStatuses()
-            self.refreshSubscriptions()
+    private func openSelectedChannel() {
+        openChannelAtRow(tableView.selectedRow)
+    }
+
+    private func openChannelAtRow(_ row: Int) {
+        guard row >= 0, row < streamers.count else { return }
+        if let url = URL(string: "https://twitch.tv/\(streamers[row])") {
+            NSWorkspace.shared.open(url)
         }
     }
 
-    @objc private func autoUpdateToggled(_ sender: NSButton) {
-        if sender.state == .on {
+    @objc private func removeSelectedChannel(_ sender: Any) {
+        let row = tableView.clickedRow
+        guard row >= 0, row < streamers.count else { return }
+        streamers.remove(at: row)
+        defaults.set(streamers, forKey: streamersKey)
+        tableView.reloadData()
+    }
+
+    @objc private func preferencesChanged() {
+        streamers = defaults.stringArray(forKey: streamersKey) ?? []
+        tableView.reloadData()
+        if defaults.bool(forKey: "autoUpdate") {
             startPolling()
         } else {
             stopPolling()
         }
-    }
-
-    @objc private func quitApp(_ sender: NSButton) {
-        NSApp.terminate(nil)
-    }
-
-    // MARK: - Connection Status
-
-    private func updateConnectionStatus() {
-        if TwitchAuthManager.shared.isAuthenticated {
-            statusLabel.stringValue = "Connected"
-            statusLabel.textColor = NSColor(calibratedRed: 0.2, green: 0.8, blue: 0.2, alpha: 1.0)
-            loginButton.title = "Reconnect"
-        } else {
-            statusLabel.stringValue = "Not connected"
-            statusLabel.textColor = .secondaryLabelColor
-            loginButton.title = "Login with Twitch"
+        if !streamers.isEmpty && TwitchAuthManager.shared.isAuthenticated {
+            refreshAllStatuses()
+            refreshSubscriptions()
         }
     }
 
@@ -248,6 +159,7 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
 
             for (name, status) in results {
                 if case .live(let title) = status {
+                    self.lastSeen[name] = Date()
                     let wasLive: Bool
                     if case .live = previousStatus[name] { wasLive = true } else { wasLive = false }
                     if !wasLive && !previousStatus.isEmpty {
@@ -255,13 +167,36 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
                     }
                 }
             }
+            self.defaults.set(self.lastSeen, forKey: self.lastSeenKey)
+            self.sortStreamers()
             self.tableView.reloadData()
+        }
+    }
+
+    private func sortStreamers() {
+        streamers.sort { a, b in
+            let aKey = a.lowercased()
+            let bKey = b.lowercased()
+            let aLive = { if case .live = self.streamerStatus[aKey] { return true }; return false }()
+            let bLive = { if case .live = self.streamerStatus[bKey] { return true }; return false }()
+            let aSub = subscribedChannels.contains(aKey)
+            let bSub = subscribedChannels.contains(bKey)
+
+            let aPriority = aLive ? (aSub ? 0 : 1) : 2
+            let bPriority = bLive ? (bSub ? 0 : 1) : 2
+            if aPriority != bPriority { return aPriority < bPriority }
+
+            if !aLive && !bLive {
+                let aDate = lastSeen[aKey] ?? .distantPast
+                let bDate = lastSeen[bKey] ?? .distantPast
+                if aDate != bDate { return aDate > bDate }
+            }
+            return a.lowercased() < b.lowercased()
         }
     }
 
     private func refreshSubscriptions() {
         guard !streamers.isEmpty else { return }
-        // Fetch broadcaster IDs for all followed channels (batches of 100)
         let batches = stride(from: 0, to: streamers.count, by: 100).map {
             Array(streamers[$0..<min($0 + 100, streamers.count)])
         }
@@ -281,7 +216,6 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
             TwitchAPIClient.shared.checkSubscriptions(logins: self.streamers,
                                                        broadcasterIds: allIds) { subscribed in
                 self.subscribedChannels = subscribed
-                self.channelCountLabel.stringValue = self.channelCountText()
                 self.tableView.reloadData()
             }
         }
@@ -309,6 +243,14 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         UNUserNotificationCenter.current().add(request)
     }
 
+    private func relativeTime(since date: Date) -> String {
+        let seconds = Int(-date.timeIntervalSinceNow)
+        if seconds < 60 { return "just now" }
+        if seconds < 3600 { return "\(seconds / 60)m ago" }
+        if seconds < 86400 { return "\(seconds / 3600)h ago" }
+        return "\(seconds / 86400)d ago"
+    }
+
     // MARK: - NSTableViewDataSource
 
     func numberOfRows(in tableView: NSTableView) -> Int {
@@ -327,19 +269,24 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         cell.addSubview(nameLabel)
 
-        // Subscription badge
-        let isSub = subscribedChannels.contains(name.lowercased())
+        let key = name.lowercased()
+        let isSub = subscribedChannels.contains(key)
 
         let statusText: String
         let statusColor: NSColor
-        if case .live(let title) = streamerStatus[name.lowercased()] {
+        if case .live(let title) = streamerStatus[key] {
             statusText = isSub ? "SUB LIVE" : "LIVE"
             statusColor = NSColor(calibratedRed: 0.9, green: 0.2, blue: 0.2, alpha: 1.0)
             nameLabel.toolTip = title
+        } else if isSub {
+            statusText = "SUB"
+            statusColor = NSColor(calibratedRed: 0.56, green: 0.28, blue: 1.0, alpha: 1.0)
+        } else if let seen = lastSeen[key] {
+            statusText = relativeTime(since: seen)
+            statusColor = .tertiaryLabelColor
         } else {
-            statusText = isSub ? "SUB" : "offline"
-            statusColor = isSub ? NSColor(calibratedRed: 0.56, green: 0.28, blue: 1.0, alpha: 1.0)
-                                : .tertiaryLabelColor
+            statusText = "offline"
+            statusColor = .tertiaryLabelColor
         }
 
         let badge = NSTextField(labelWithString: statusText)

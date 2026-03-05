@@ -55,6 +55,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showContextMenu() {
         let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "About Twitch Notifier",
+                                action: #selector(showAbout(_:)),
+                                keyEquivalent: ""))
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Preferences...",
                                 action: #selector(showPreferences(_:)),
                                 keyEquivalent: ","))
@@ -65,6 +69,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
+    }
+
+    @objc private func showAbout(_ sender: Any?) {
+        let year = Calendar.current.component(.year, from: Date())
+        let copyright = NSAttributedString(
+            string: "Copyright © \(year) Enum Solutions Inc.\nAll rights reserved.",
+            attributes: [.font: NSFont.systemFont(ofSize: 11),
+                         .foregroundColor: NSColor.secondaryLabelColor]
+        )
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: copyright
+        ])
     }
 
     @objc private func showPreferences(_ sender: Any?) {

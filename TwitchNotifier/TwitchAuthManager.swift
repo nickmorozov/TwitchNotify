@@ -8,19 +8,12 @@ final class TwitchAuthManager {
 
     private init() {}
 
-    /// The effective Client ID: Keychain override, then hardcoded default.
-    var clientId: String? {
-        if let saved = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-           !saved.isEmpty {
-            return saved
-        }
-        let builtin = TwitchConstants.defaultClientId
-        return builtin.isEmpty ? nil : builtin
+    var clientId: String {
+        TwitchConstants.clientId
     }
 
     func startAuth() {
-        guard let clientId = clientId else { return }
-        KeychainHelper.shared.save(clientId, forKey: "twitch_client_id")
+        guard !clientId.isEmpty else { return }
 
         let redirectURI = TwitchConstants.redirectURI
         let authURL = "\(TwitchConstants.authURL)?client_id=\(clientId)"
@@ -67,11 +60,9 @@ final class TwitchAuthManager {
 
     func disconnect() {
         KeychainHelper.shared.delete(forKey: "twitch_access_token")
-        KeychainHelper.shared.delete(forKey: "twitch_client_id")
     }
 
     var isAuthenticated: Bool {
         return KeychainHelper.shared.retrieve(forKey: "twitch_access_token") != nil
-            && KeychainHelper.shared.retrieve(forKey: "twitch_client_id") != nil
     }
 }

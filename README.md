@@ -1,9 +1,15 @@
-# TwitchNotify
-MacOS status bar app for Twitch notifications. Add your favorite streamer in a tool and never skip live-streams anymore! 
-![alt text](https://pp.userapi.com/c845324/v845324053/c03e2/4wsmDsH6Fuc.jpg)
+<img src="site/images/icon.png" alt="Twitch Notifier" width="80">
 
+# Twitch Notifier
 
+A macOS menu bar app that monitors Twitch streamers and notifies you when they go live.
 
+## Features
 
-
-
+- Live notifications when followed streamers start streaming
+- Sync your Twitch follows automatically
+- Add channels manually
+- Channels sorted by status: live subs, live follows, then offline by last seen
+- Double-click or press Enter to open a channel
+- Auto-update polling
+- Launch at Login support

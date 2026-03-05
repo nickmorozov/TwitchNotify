@@ -2,7 +2,7 @@ import Foundation
 
 struct TwitchConstants {
     // Injected at build time via Secrets.xcconfig → Info.plist
-    static let defaultClientId: String = {
+    static let clientId: String = {
         Bundle.main.object(forInfoDictionaryKey: "TwitchClientId") as? String ?? ""
     }()
 

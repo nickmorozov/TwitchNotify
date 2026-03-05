@@ -12,8 +12,8 @@ final class TwitchAPIClient {
     private init() {}
 
     func checkStream(username: String, completion: @escaping (StreamStatus) -> Void) {
-        guard let clientId = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-              let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
+        let clientId = TwitchConstants.clientId
+        guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion(.unauthorized) }
             return
         }
@@ -64,8 +64,8 @@ final class TwitchAPIClient {
     }
 
     func checkStreams(usernames: [String], completion: @escaping ([String: StreamStatus]) -> Void) {
-        guard let clientId = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-              let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
+        let clientId = TwitchConstants.clientId
+        guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion([:]) }
             return
         }
@@ -109,8 +109,8 @@ final class TwitchAPIClient {
 
     /// Fetches broadcaster IDs for a list of logins. Needed for subscription checks.
     func fetchUserIds(logins: [String], completion: @escaping ([String: String]) -> Void) {
-        guard let clientId = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-              let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
+        let clientId = TwitchConstants.clientId
+        guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion([:]) }
             return
         }
@@ -151,8 +151,8 @@ final class TwitchAPIClient {
     /// Checks subscription status for a single broadcaster.
     /// Returns true if the authenticated user is subscribed to the broadcaster.
     func checkSubscription(broadcasterId: String, completion: @escaping (Bool) -> Void) {
-        guard let clientId = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-              let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
+        let clientId = TwitchConstants.clientId
+        guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion(false) }
             return
         }
@@ -215,8 +215,8 @@ final class TwitchAPIClient {
     }
 
     func fetchFollowedChannels(completion: @escaping ([String]) -> Void) {
-        guard let clientId = KeychainHelper.shared.retrieve(forKey: "twitch_client_id"),
-              let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
+        let clientId = TwitchConstants.clientId
+        guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion([]) }
             return
         }

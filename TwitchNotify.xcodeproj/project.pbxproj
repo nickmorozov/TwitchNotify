@@ -111,7 +111,7 @@
 			attributes = {
 				LastSwiftUpdateCheck = 0940;
 				LastUpgradeCheck = 0940;
-				ORGANIZATIONNAME = Sinapsic;
+				ORGANIZATIONNAME = "Enum Solutions Inc.";
 				TargetAttributes = {
 					112C856C211EF65600517242 = {
 						CreatedOnToolsVersion = 9.4.1;
