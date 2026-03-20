@@ -26,3 +26,5 @@ Secrets.xcconfig
 *.swp
 *~
 .claude/
+.superpowers/
+Twitch-Brand.zip

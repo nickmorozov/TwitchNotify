@@ -7,9 +7,15 @@ enum StreamStatus {
     case unauthorized
 }
 
+struct TwitchUserInfo {
+    let id: String
+    let profileImageURL: String?
+}
+
 final class TwitchAPIClient {
     static let shared = TwitchAPIClient()
     private init() {}
+
 
     func checkStream(username: String, completion: @escaping (StreamStatus) -> Void) {
         let clientId = TwitchConstants.clientId
@@ -107,8 +113,8 @@ final class TwitchAPIClient {
         }.resume()
     }
 
-    /// Fetches broadcaster IDs for a list of logins. Needed for subscription checks.
-    func fetchUserIds(logins: [String], completion: @escaping ([String: String]) -> Void) {
+    /// Fetches broadcaster IDs and profile image URLs for a list of logins.
+    func fetchUserIds(logins: [String], completion: @escaping ([String: TwitchUserInfo]) -> Void) {
         let clientId = TwitchConstants.clientId
         guard let token = KeychainHelper.shared.retrieve(forKey: "twitch_access_token") else {
             DispatchQueue.main.async { completion([:]) }
@@ -137,11 +143,12 @@ final class TwitchAPIClient {
                 DispatchQueue.main.async { completion([:]) }
                 return
             }
-            var map: [String: String] = [:]
+            var map: [String: TwitchUserInfo] = [:]
             for user in users {
                 if let login = user["login"] as? String,
                    let id = user["id"] as? String {
-                    map[login.lowercased()] = id
+                    let profileImageURL = user["profile_image_url"] as? String
+                    map[login.lowercased()] = TwitchUserInfo(id: id, profileImageURL: profileImageURL)
                 }
             }
             DispatchQueue.main.async { completion(map) }

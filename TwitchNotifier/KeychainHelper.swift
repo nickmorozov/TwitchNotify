@@ -1,44 +1,24 @@
 import Foundation
-import Security
 
+/// Stores app tokens in UserDefaults (sandboxed to the app container).
+/// The OAuth bearer token is not a user credential — UserDefaults is
+/// appropriate here and avoids keychain ACL password prompts entirely.
 final class KeychainHelper {
     static let shared = KeychainHelper()
-    private let service = "nwapp.TwitchNotifier"
+    private let defaults = UserDefaults.standard
+    private let prefix = "nwapp.TwitchNotifier."
 
     private init() {}
 
     func save(_ value: String, forKey key: String) {
-        guard let data = value.data(using: .utf8) else { return }
-        delete(forKey: key)
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data
-        ]
-        SecItemAdd(query as CFDictionary, nil)
+        defaults.set(value, forKey: prefix + key)
     }
 
     func retrieve(forKey key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        defaults.string(forKey: prefix + key)
     }
 
     func delete(forKey key: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ]
-        SecItemDelete(query as CFDictionary)
+        defaults.removeObject(forKey: prefix + key)
     }
 }

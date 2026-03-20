@@ -14,6 +14,7 @@ final class PreferencesWindowController: NSWindowController {
     private var channelCountLabel: NSTextField!
     private var addChannelField: NSTextField!
     private var autoUpdateCheckbox: NSButton!
+    private var persistentNotificationsCheckbox: NSButton!
     private var launchAtLoginCheckbox: NSButton!
 
     private let defaults = UserDefaults.standard
@@ -21,7 +22,7 @@ final class PreferencesWindowController: NSWindowController {
 
     private init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 220),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 250),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -104,6 +105,14 @@ final class PreferencesWindowController: NSWindowController {
         autoUpdateCheckbox.translatesAutoresizingMaskIntoConstraints = false
         v.addSubview(autoUpdateCheckbox)
 
+        persistentNotificationsCheckbox = NSButton(checkboxWithTitle: "Persistent notifications",
+                                                    target: self,
+                                                    action: #selector(persistentNotificationsToggled(_:)))
+        persistentNotificationsCheckbox.font = .systemFont(ofSize: 12)
+        persistentNotificationsCheckbox.state = defaults.bool(forKey: "persistentNotifications") ? .on : .off
+        persistentNotificationsCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        v.addSubview(persistentNotificationsCheckbox)
+
         launchAtLoginCheckbox = NSButton(checkboxWithTitle: "Launch at Login", target: self,
                                          action: #selector(launchAtLoginToggled(_:)))
         launchAtLoginCheckbox.font = .systemFont(ofSize: 12)
@@ -144,7 +153,10 @@ final class PreferencesWindowController: NSWindowController {
             autoUpdateCheckbox.topAnchor.constraint(equalTo: sep.bottomAnchor, constant: 12),
             autoUpdateCheckbox.leadingAnchor.constraint(equalTo: v.leadingAnchor, constant: 20),
 
-            launchAtLoginCheckbox.topAnchor.constraint(equalTo: autoUpdateCheckbox.bottomAnchor, constant: 6),
+            persistentNotificationsCheckbox.topAnchor.constraint(equalTo: autoUpdateCheckbox.bottomAnchor, constant: 6),
+            persistentNotificationsCheckbox.leadingAnchor.constraint(equalTo: v.leadingAnchor, constant: 20),
+
+            launchAtLoginCheckbox.topAnchor.constraint(equalTo: persistentNotificationsCheckbox.bottomAnchor, constant: 6),
             launchAtLoginCheckbox.leadingAnchor.constraint(equalTo: v.leadingAnchor, constant: 20),
         ])
     }
@@ -213,6 +225,10 @@ final class PreferencesWindowController: NSWindowController {
     @objc private func autoUpdateToggled(_ sender: NSButton) {
         defaults.set(sender.state == .on, forKey: "autoUpdate")
         NotificationCenter.default.post(name: .preferencesDidChange, object: nil)
+    }
+
+    @objc private func persistentNotificationsToggled(_ sender: NSButton) {
+        defaults.set(sender.state == .on, forKey: "persistentNotifications")
     }
 
     @objc private func launchAtLoginToggled(_ sender: NSButton) {

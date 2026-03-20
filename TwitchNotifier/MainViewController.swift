@@ -17,6 +17,10 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
     private let streamersKey = "monitoredStreamers"
     private let lastSeenKey = "lastSeenLive"
 
+    // Profile pictures
+    private var profileImageURLs: [String: String] = [:]
+    private var profileImageCache: [String: NSImage] = [:]
+
     override func loadView() {
         self.view = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 360))
     }
@@ -29,9 +33,12 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
             lastSeen = saved
         }
         setupUI()
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        var authOptions: UNAuthorizationOptions = [.alert, .sound]
+        if #available(macOS 12.0, *) { authOptions.insert(.timeSensitive) }
+        UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { _, _ in }
         if !streamers.isEmpty && TwitchAuthManager.shared.isAuthenticated {
             refreshAllStatuses()
+            refreshSubscriptions()
         }
         if defaults.bool(forKey: "autoUpdate") {
             startPolling()
@@ -65,7 +72,7 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         tableView.doubleAction = #selector(openChannel(_:))
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.rowHeight = 24
+        tableView.rowHeight = 32
         tableView.backgroundColor = .clear
         tableView.usesAlternatingRowBackgroundColors = false
 
@@ -158,15 +165,26 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
             self.streamerStatus = results
 
             for (name, status) in results {
+                let wasLive: Bool
+                if case .live = previousStatus[name] { wasLive = true } else { wasLive = false }
+
                 if case .live(let title) = status {
                     self.lastSeen[name] = Date()
-                    let wasLive: Bool
-                    if case .live = previousStatus[name] { wasLive = true } else { wasLive = false }
                     if !wasLive && !previousStatus.isEmpty {
                         self.deliverNotification(streamer: name, title: title)
                     }
+                } else if wasLive {
+                    // Stream went offline — remove its notification
+                    UNUserNotificationCenter.current()
+                        .removeDeliveredNotifications(withIdentifiers: ["live-\(name)"])
                 }
             }
+
+            let liveCount = results.values.filter {
+                if case .live = $0 { return true }; return false
+            }.count
+            (NSApp.delegate as? AppDelegate)?.updateLiveCount(liveCount)
+
             self.defaults.set(self.lastSeen, forKey: self.lastSeenKey)
             self.sortStreamers()
             self.tableView.reloadData()
@@ -205,20 +223,39 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
 
         for batch in batches {
             group.enter()
-            TwitchAPIClient.shared.fetchUserIds(logins: batch) { ids in
-                for (k, v) in ids { allIds[k] = v }
+            TwitchAPIClient.shared.fetchUserIds(logins: batch) { [weak self] userInfoMap in
+                for (login, info) in userInfoMap {
+                    allIds[login] = info.id
+                    if let url = info.profileImageURL {
+                        self?.profileImageURLs[login] = url
+                    }
+                }
                 group.leave()
             }
         }
 
         group.notify(queue: .main) { [weak self] in
             guard let self = self else { return }
+            for (login, urlString) in self.profileImageURLs where self.profileImageCache[login] == nil {
+                self.loadProfileImage(for: login, urlString: urlString)
+            }
             TwitchAPIClient.shared.checkSubscriptions(logins: self.streamers,
                                                        broadcasterIds: allIds) { subscribed in
                 self.subscribedChannels = subscribed
                 self.tableView.reloadData()
             }
         }
+    }
+
+    private func loadProfileImage(for login: String, urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let data = data, let image = NSImage(data: data) else { return }
+            DispatchQueue.main.async {
+                self?.profileImageCache[login] = image
+                self?.tableView.reloadData()
+            }
+        }.resume()
     }
 
     private func startPolling() {
@@ -238,6 +275,12 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         content.title = "\(streamer) is live!"
         content.body = title
         content.sound = .default
+        content.userInfo = ["streamer": streamer]
+        if defaults.bool(forKey: "persistentNotifications") {
+            if #available(macOS 12.0, *) {
+                content.interruptionLevel = .timeSensitive
+            }
+        }
         let request = UNNotificationRequest(identifier: "live-\(streamer)",
                                             content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
@@ -261,17 +304,40 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let name = streamers[row]
+        let key = name.lowercased()
+        let isSub = subscribedChannels.contains(key)
         let cell = NSTableCellView()
 
+        // Avatar
+        let avatarView = StreamerAvatarView(frame: .zero)
+        avatarView.translatesAutoresizingMaskIntoConstraints = false
+        avatarView.image = profileImageCache[key]
+        avatarView.initials = String(name.prefix(2)).uppercased()
+        if case .live = streamerStatus[key] {
+            let liveRed = NSColor(calibratedRed: 0.9, green: 0.2, blue: 0.2, alpha: 1.0)
+            let twPurple = NSColor(calibratedRed: 0.569, green: 0.275, blue: 1.0, alpha: 1.0)
+            avatarView.borderColor = isSub ? twPurple : liveRed
+            avatarView.glowing = true
+            avatarView.dimmed = false
+        } else if isSub {
+            avatarView.borderColor = NSColor(calibratedRed: 0.569, green: 0.275, blue: 1.0, alpha: 1.0)
+            avatarView.glowing = false
+            avatarView.dimmed = true
+        } else {
+            avatarView.borderColor = NSColor(calibratedWhite: 0.35, alpha: 1.0)
+            avatarView.glowing = false
+            avatarView.dimmed = true
+        }
+        cell.addSubview(avatarView)
+
+        // Name label
         let nameLabel = NSTextField(labelWithString: name)
         nameLabel.font = .systemFont(ofSize: 12)
         nameLabel.lineBreakMode = .byTruncatingTail
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         cell.addSubview(nameLabel)
 
-        let key = name.lowercased()
-        let isSub = subscribedChannels.contains(key)
-
+        // Status badge
         let statusText: String
         let statusColor: NSColor
         if case .live(let title) = streamerStatus[key] {
@@ -297,9 +363,15 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         cell.addSubview(badge)
 
         NSLayoutConstraint.activate([
-            nameLabel.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
+            avatarView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 6),
+            avatarView.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            avatarView.widthAnchor.constraint(equalToConstant: 30),
+            avatarView.heightAnchor.constraint(equalToConstant: 30),
+
+            nameLabel.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor, constant: 6),
             nameLabel.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
             nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: badge.leadingAnchor, constant: -8),
+
             badge.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
             badge.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
             badge.widthAnchor.constraint(greaterThanOrEqualToConstant: 50),
@@ -311,5 +383,67 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
 
     static func freshController() -> MainViewController {
         return MainViewController()
+    }
+}
+
+// MARK: - StreamerAvatarView
+
+private final class StreamerAvatarView: NSView {
+    var image: NSImage?
+    var borderColor: NSColor = NSColor(calibratedWhite: 0.35, alpha: 1.0)
+    var glowing = false
+    var dimmed = false
+    var initials = ""
+
+    override init(frame: NSRect) { super.init(frame: frame) }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func draw(_ dirtyRect: NSRect) {
+        // Leave 3px margin on each side so the glow shadow isn't clipped
+        let circleRect = bounds.insetBy(dx: 3, dy: 3)
+
+        // Glow pass — drawn before clipping so it extends into the margin
+        if glowing {
+            NSGraphicsContext.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = borderColor.withAlphaComponent(0.75)
+            shadow.shadowBlurRadius = 4
+            shadow.shadowOffset = .zero
+            shadow.set()
+            borderColor.setStroke()
+            let glowPath = NSBezierPath(ovalIn: circleRect)
+            glowPath.lineWidth = 2
+            glowPath.stroke()
+            NSGraphicsContext.restoreGraphicsState()
+        }
+
+        // Clip to circle and draw image or initials
+        NSGraphicsContext.saveGraphicsState()
+        let clip = NSBezierPath(ovalIn: circleRect)
+        clip.addClip()
+        let alpha: CGFloat = dimmed ? 0.55 : 1.0
+        if let img = image {
+            img.draw(in: circleRect, from: .zero, operation: .sourceOver, fraction: alpha)
+        } else {
+            NSColor(calibratedWhite: 0.28, alpha: alpha).setFill()
+            clip.fill()
+            let font = NSFont.boldSystemFont(ofSize: circleRect.width * 0.32)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.white.withAlphaComponent(alpha)
+            ]
+            let str = initials as NSString
+            let sz = str.size(withAttributes: attrs)
+            str.draw(at: NSPoint(x: circleRect.midX - sz.width / 2,
+                                 y: circleRect.midY - sz.height / 2),
+                     withAttributes: attrs)
+        }
+        NSGraphicsContext.restoreGraphicsState()
+
+        // Border ring drawn on top (not clipped, so it straddles the edge)
+        borderColor.withAlphaComponent(dimmed ? 0.45 : 1.0).setStroke()
+        let borderPath = NSBezierPath(ovalIn: circleRect)
+        borderPath.lineWidth = 2
+        borderPath.stroke()
     }
 }
