@@ -6,6 +6,7 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
     // UI elements
     private var tableView: NSTableView!
     private var gearButton: NSButton!
+    private var loginPromptView: NSView!
 
     // State
     private var streamers: [String] = []
@@ -43,9 +44,12 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         if defaults.bool(forKey: "autoUpdate") {
             startPolling()
         }
+        updateLoginPromptVisibility()
 
         NotificationCenter.default.addObserver(self, selector: #selector(preferencesChanged),
                                                name: .preferencesDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(authStateChanged),
+                                               name: .twitchAuthStateChanged, object: nil)
 
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self,
@@ -108,6 +112,65 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
             gearButton.widthAnchor.constraint(equalToConstant: 24),
             gearButton.heightAnchor.constraint(equalToConstant: 24),
         ])
+
+        // --- Login Prompt (shown when not authenticated) ---
+        let effectView = NSVisualEffectView()
+        effectView.material = .popover
+        effectView.blendingMode = .withinWindow
+        effectView.state = .active
+        loginPromptView = effectView
+        loginPromptView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loginPromptView)
+
+        let twitchPurple = NSColor(calibratedRed: 0.569, green: 0.275, blue: 1.0, alpha: 1.0)
+
+        let iconLabel = NSTextField(labelWithString: "📺")
+        iconLabel.font = .systemFont(ofSize: 36)
+        iconLabel.alignment = .center
+        iconLabel.translatesAutoresizingMaskIntoConstraints = false
+        loginPromptView.addSubview(iconLabel)
+
+        let titleLabel = NSTextField(labelWithString: "Connect to Twitch")
+        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.alignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        loginPromptView.addSubview(titleLabel)
+
+        let subtitleLabel = NSTextField(labelWithString: "Sign in to monitor streams\nand get live notifications")
+        subtitleLabel.font = .systemFont(ofSize: 11)
+        subtitleLabel.textColor = .secondaryLabelColor
+        subtitleLabel.alignment = .center
+        subtitleLabel.maximumNumberOfLines = 2
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        loginPromptView.addSubview(subtitleLabel)
+
+        let connectButton = NSButton(title: "Connect", target: self, action: #selector(connectTwitch(_:)))
+        connectButton.bezelStyle = .rounded
+        connectButton.contentTintColor = twitchPurple
+        connectButton.translatesAutoresizingMaskIntoConstraints = false
+        loginPromptView.addSubview(connectButton)
+
+        NSLayoutConstraint.activate([
+            loginPromptView.topAnchor.constraint(equalTo: view.topAnchor),
+            loginPromptView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            loginPromptView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            loginPromptView.bottomAnchor.constraint(equalTo: gearButton.topAnchor),
+
+            iconLabel.centerXAnchor.constraint(equalTo: loginPromptView.centerXAnchor),
+            iconLabel.centerYAnchor.constraint(equalTo: loginPromptView.centerYAnchor, constant: -46),
+
+            titleLabel.topAnchor.constraint(equalTo: iconLabel.bottomAnchor, constant: 8),
+            titleLabel.centerXAnchor.constraint(equalTo: loginPromptView.centerXAnchor),
+
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            subtitleLabel.centerXAnchor.constraint(equalTo: loginPromptView.centerXAnchor),
+            subtitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: loginPromptView.leadingAnchor, constant: 16),
+            subtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: loginPromptView.trailingAnchor, constant: -16),
+
+            connectButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
+            connectButton.centerXAnchor.constraint(equalTo: loginPromptView.centerXAnchor),
+        ])
     }
 
     // MARK: - Actions
@@ -115,6 +178,23 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
     @objc private func openPreferences(_ sender: Any) {
         PreferencesWindowController.shared.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func connectTwitch(_ sender: Any) {
+        TwitchAuthManager.shared.startAuth()
+    }
+
+    @objc private func authStateChanged() {
+        updateLoginPromptVisibility()
+        if TwitchAuthManager.shared.isAuthenticated && !streamers.isEmpty {
+            refreshAllStatuses()
+            refreshSubscriptions()
+        }
+    }
+
+    private func updateLoginPromptVisibility() {
+        let authenticated = TwitchAuthManager.shared.isAuthenticated
+        loginPromptView.isHidden = authenticated
     }
 
     @objc private func openChannel(_ sender: Any) {

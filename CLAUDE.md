@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TwitchNotify is a **macOS status bar (menu bar) application** that monitors Twitch streamers and shows notifications when they go live. Built with Swift 4.0 and Cocoa/AppKit, targeting macOS 10.13+.
+TwitchNotifier is a **macOS status bar (menu bar) application** that monitors Twitch streamers and shows notifications when they go live. Built with Swift 4.0 and Cocoa/AppKit, targeting macOS 10.13+.
 
 The Xcode project is named "Quotes" (the original working name) — the target, bundle ID (`nwapp.Quotes`), and scheme all use this name.
 

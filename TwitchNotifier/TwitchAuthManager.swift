@@ -1,6 +1,10 @@
 import Foundation
 import Cocoa
 
+extension Notification.Name {
+    static let twitchAuthStateChanged = Notification.Name("twitchAuthStateChanged")
+}
+
 final class TwitchAuthManager {
     static let shared = TwitchAuthManager()
     private var timeoutWork: DispatchWorkItem?
@@ -52,7 +56,10 @@ final class TwitchAuthManager {
 
         if let token = params["access_token"], !token.isEmpty {
             KeychainHelper.shared.save(token, forKey: "twitch_access_token")
-            DispatchQueue.main.async { self.onAuthComplete?(true) }
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .twitchAuthStateChanged, object: nil)
+                self.onAuthComplete?(true)
+            }
         } else {
             DispatchQueue.main.async { self.onAuthComplete?(false) }
         }
@@ -60,6 +67,7 @@ final class TwitchAuthManager {
 
     func disconnect() {
         KeychainHelper.shared.delete(forKey: "twitch_access_token")
+        NotificationCenter.default.post(name: .twitchAuthStateChanged, object: nil)
     }
 
     var isAuthenticated: Bool {
