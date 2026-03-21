@@ -393,6 +393,11 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
         avatarView.translatesAutoresizingMaskIntoConstraints = false
         avatarView.image = profileImageCache[key]
         avatarView.initials = String(name.prefix(2)).uppercased()
+        avatarView.clickHandler = { [weak self] in
+            if let url = URL(string: "https://twitch.tv/\(name)") {
+                NSWorkspace.shared.open(url)
+            }
+        }
         if case .live = streamerStatus[key] {
             let liveRed = NSColor(calibratedRed: 0.9, green: 0.2, blue: 0.2, alpha: 1.0)
             let twPurple = NSColor(calibratedRed: 0.569, green: 0.275, blue: 1.0, alpha: 1.0)
@@ -435,11 +440,23 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
             statusColor = .tertiaryLabelColor
         }
 
-        let badge = NSTextField(labelWithString: statusText)
+        let badge = ClickableTextField(frame: .zero)
+        badge.stringValue = statusText
+        badge.isEditable = false
+        badge.isSelectable = false
+        badge.isBordered = false
+        badge.drawsBackground = false
         badge.font = .boldSystemFont(ofSize: 10)
         badge.textColor = statusColor
         badge.alignment = .right
         badge.translatesAutoresizingMaskIntoConstraints = false
+        if case .live = streamerStatus[key] {
+            badge.clickHandler = { [weak self] in
+                if let url = URL(string: "https://twitch.tv/\(name)") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
         cell.addSubview(badge)
 
         NSLayoutConstraint.activate([
@@ -468,15 +485,40 @@ class MainViewController: NSViewController, NSTableViewDataSource, NSTableViewDe
 
 // MARK: - StreamerAvatarView
 
+private final class ClickableTextField: NSTextField {
+    var clickHandler: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        clickHandler?()
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        if clickHandler != nil {
+            addCursorRect(bounds, cursor: .pointingHand)
+        }
+    }
+}
+
 private final class StreamerAvatarView: NSView {
     var image: NSImage?
     var borderColor: NSColor = NSColor(calibratedWhite: 0.35, alpha: 1.0)
     var glowing = false
     var dimmed = false
     var initials = ""
+    var clickHandler: (() -> Void)?
 
     override init(frame: NSRect) { super.init(frame: frame) }
     required init?(coder: NSCoder) { fatalError() }
+
+    override func mouseDown(with event: NSEvent) {
+        clickHandler?()
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         // Leave 3px margin on each side so the glow shadow isn't clipped
